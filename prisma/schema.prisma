@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model DailyLog {
+  id        String   @id @default(cuid())
+  date      String   @unique // YYYY-MM-DD format
+
+  // Task checks (JSON string of {taskId: boolean})
+  checks    String   @default("{}")
+
+  // Week overview
+  weekDone  String   @default("{}") // {dateStr: {taskId: boolean}}
+
+  // Daily metrics
+  feeling   Int      @default(0)    // 1-10 energy level
+  noteText  String   @default("")
+
+  // Progress
+  layer     Int      @default(1)    // Current layer (1-3)
+  pct       Int      @default(0)    // Completion percentage
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HealthMetric {
+  id        String   @id @default(cuid())
+  date      String              // YYYY-MM-DD
+  name      String              // e.g. "ApoB", "Fasting Insulin"
+  value     String              // The measured value
+  unit      String   @default("")
+  target    String   @default("") // Target range
+  note      String   @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date, name])
+}
+
+model AgentConversation {
+  id        String   @id @default(cuid())
+  date      String              // YYYY-MM-DD
+  role      String              // "user" or "agent"
+  content   String              // Message content
+  metadata  String   @default("{}") // Additional data
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}

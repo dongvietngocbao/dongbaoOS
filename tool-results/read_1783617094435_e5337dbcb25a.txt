@@ -1,0 +1,684 @@
+     1→import { useState, useEffect, useRef } from "react";
+     2→
+     3→// ============ DESIGN TOKENS ============
+     4→const T = {
+     5→  bg: "#F4F3F0",
+     6→  card: "#FFFFFF",
+     7→  dark: "#1A1A1A",
+     8→  darkCard: "#222222",
+     9→  text: "#1A1A1A",
+    10→  sub: "#8E8E93",
+    11→  muted: "#C7C7CC",
+    12→  border: "#E8E7E3",
+    13→  accent: "#CAFF4E",
+    14→  accentDark: "#3D5A00",
+    15→  green: "#34C759",
+    16→  red: "#FF3B30",
+    17→  shadow: "0 2px 16px rgba(0,0,0,0.06)",
+    18→  shadowLg: "0 8px 32px rgba(0,0,0,0.10)",
+    19→  radius: 18,
+    20→  radiusSm: 12,
+    21→};
+    22→
+    23→// ============ DATA ============
+    24→const DAYS = ["CN","T2","T3","T4","T5","T6","T7"];
+    25→const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6","Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
+    26→
+    27→const TRAINING = {
+    28→  1: { label: "Strength A", desc: "Squat · Push-up · Row", type: "strength", time: "45–60p" },
+    29→  2: { label: "Đi bộ Zone 2", desc: "Nhẹ nhàng · nói chuyện được", type: "cardio", time: "30–45p" },
+    30→  3: { label: "Strength B", desc: "Hinge · Pull-up · Lunge", type: "strength", time: "45–60p" },
+    31→  4: { label: "Đi bộ + Mobility", desc: "Đi bộ 30p · Giãn cơ 10p", type: "cardio", time: "30–45p" },
+    32→  5: { label: "Strength C", desc: "Full body hoặc nghỉ", type: "strength", time: "45–60p" },
+    33→  6: { label: "Tự do", desc: "Bơi · Leo núi · Thể thao", type: "free", time: "Tự do" },
+    34→  0: { label: "Phục hồi", desc: "Nghỉ ngơi · Meal prep", type: "rest", time: "—" },
+    35→};
+    36→
+    37→const buildTasks = (dow) => ({
+    38→  training: [
+    39→    { id: "t_main", label: TRAINING[dow].label, sub: TRAINING[dow].desc },
+    40→    ...(dow >= 1 && dow <= 5 && dow % 2 === 1 ? [{ id: "t_collagen", label: "Collagen + VitC", sub: "60 phút trước tập" }] : []),
+    41→    { id: "t_walk", label: "Đi bộ 8.000+ bước", sub: "Trong ngày" },
+    42→  ],
+    43→  nutrition: [
+    44→    { id: "n_protein", label: "Đủ protein mỗi bữa", sub: "~35-40g × 3 bữa" },
+    45→    { id: "n_veg", label: "Rau ≥ 3 phần", sub: "Ăn rau trước, cơm sau" },
+    46→    { id: "n_water", label: "Uống 2–3 lít nước", sub: "" },
+    47→    { id: "n_stop", label: "Ngừng ăn 3h trước ngủ", sub: "" },
+    48→  ],
+    49→  mind: [
+    50→    { id: "m_read", label: "Đọc 10 trang sách", sub: "" },
+    51→    { id: "m_note", label: "Viết 1 ghi chú", sub: "Suy nghĩ · Bài học · Ý tưởng" },
+    52→    { id: "m_breath", label: "Thở 4-7-8", sub: "Hít 4s · Giữ 7s · Thở 8s × 3" },
+    53→  ],
+    54→  sleep: [
+    55→    { id: "s_time", label: "Ngủ đúng giờ", sub: "Cố định, kể cả cuối tuần" },
+    56→    { id: "s_screen", label: "Không màn hình 1h", sub: "Trước khi ngủ" },
+    57→  ],
+    58→});
+    59→
+    60→const SECTIONS = [
+    61→  { key: "training", label: "Luyện Tập", icon: "●" },
+    62→  { key: "nutrition", label: "Dinh Dưỡng", icon: "◐" },
+    63→  { key: "mind", label: "Tư Duy", icon: "◆" },
+    64→  { key: "sleep", label: "Giấc Ngủ", icon: "◑" },
+    65→];
+    66→
+    67→const WEEK = [
+    68→  { day: "T2", label: "Strength A", type: "s" },
+    69→  { day: "T3", label: "Walk", type: "c" },
+    70→  { day: "T4", label: "Strength B", type: "s" },
+    71→  { day: "T5", label: "Walk+", type: "c" },
+    72→  { day: "T6", label: "Strength C", type: "s" },
+    73→  { day: "T7", label: "Free", type: "f" },
+    74→  { day: "CN", label: "Rest", type: "r" },
+    75→];
+    76→
+    77→const BIOMARKERS = [
+    78→  { name: "ApoB", target: "< 60", unit: "mg/dL", desc: "Xơ vữa động mạch" },
+    79→  { name: "Fasting Insulin", target: "2–5", unit: "µIU/mL", desc: "Kháng insulin" },
+    80→  { name: "HbA1c", target: "4.8–5.3", unit: "%", desc: "Đường huyết TB" },
+    81→  { name: "hs-CRP", target: "< 0.5", unit: "mg/L", desc: "Viêm âm ỉ" },
+    82→  { name: "VO2 Max", target: "Top 25%", unit: "", desc: "Sức bền tim phổi" },
+    83→  { name: "Grip", target: "> 50", unit: "kg", desc: "Sức mạnh tổng thể" },
+    84→];
+    85→
+    86→const LAYERS = [
+    87→  { id: 1, name: "Nền Móng", period: "6 tháng đầu", focus: ["Tập 3-4x/tuần", "Ngủ 7-8h", "Protein + Rau", "Đi bộ mỗi ngày"] },
+    88→  { id: 2, name: "Mở Rộng", period: "Tháng 7–18", focus: ["VO2 Max 4×4", "Sauna 2-3x", "XN Biomarker", "Bổ sung theo data"] },
+    89→  { id: 3, name: "Tối Ưu", period: "Sau 18 tháng", focus: ["Cold Plunge", "NSDR", "Dual-tasking", "Geroprotectors"] },
+    90→];
+    91→
+    92→const FOODS = [
+    93→  { n: "Trứng", p: "Protein+Choline", e: "🥚" },
+    94→  { n: "Cá Nục", p: "Omega-3", e: "🐟" },
+    95→  { n: "Đậu Phụ", p: "Protein TV", e: "🫘" },
+    96→  { n: "Rau Ngót", p: "Vi chất VN", e: "🥬" },
+    97→  { n: "Khoai Lang", p: "Carb chậm", e: "🍠" },
+    98→  { n: "Nghệ Đỏ", p: "Kháng viêm", e: "🟡" },
+    99→  { n: "Ổi", p: "VitC ×4 cam", e: "🍈" },
+   100→  { n: "Cua Đồng", p: "Canxi ×40", e: "🦀" },
+   101→  { n: "Tỏi+Gừng", p: "Miễn dịch", e: "🧄" },
+   102→  { n: "Sữa chua", p: "Probiotics", e: "🥛" },
+   103→];
+   104→
+   105→const KEY = "dongbao_os_v4";
+   106→
+   107→export default function App() {
+   108→  const [tab, setTab] = useState("today");
+   109→  const [checks, setChecks] = useState({});
+   110→  const [weekDone, setWeekDone] = useState({});
+   111→  const [feeling, setFeeling] = useState(0);
+   112→  const [noteText, setNoteText] = useState("");
+   113→  const [layer, setLayer] = useState(1);
+   114→  const [openSec, setOpenSec] = useState({ training: true, nutrition: true, mind: true, sleep: true });
+   115→  const [expandDay, setExpandDay] = useState(null);
+   116→
+   117→  useEffect(() => {
+   118→    try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if(d.checks) setChecks(d.checks); if(d.weekDone) setWeekDone(d.weekDone); if(d.feeling) setFeeling(d.feeling); if(d.noteText) setNoteText(d.noteText); if(d.layer) setLayer(d.layer); } } catch(e){}
+   119→  }, []);
+   120→  useEffect(() => {
+   121→    try { localStorage.setItem(KEY, JSON.stringify({ checks, weekDone, feeling, noteText, layer })); } catch(e){}
+   122→  }, [checks, weekDone, feeling, noteText, layer]);
+   123→
+   124→  const now = new Date();
+   125→  const dow = now.getDay();
+   126→  const tasks = buildTasks(dow);
+   127→  const allIds = [...tasks.training, ...tasks.nutrition, ...tasks.mind, ...tasks.sleep].map(t => t.id);
+   128→  const doneCount = allIds.filter(id => checks[id]).length;
+   129→  const totalCount = allIds.length;
+   130→  const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+   131→
+   132→  const greetH = now.getHours();
+   133→  const greet = greetH < 12 ? "Chào buổi sáng" : greetH < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+   134→  const training = TRAINING[dow];
+   135→
+   136→  const toggle = id => setChecks(p => ({ ...p, [id]: !p[id] }));
+   137→  const toggleSec = k => setOpenSec(p => ({ ...p, [k]: !p[k] }));
+   138→
+   139→  // ============ COMMON COMPONENTS ============
+   140→
+   141→  const Card = ({ children, dark, style, onClick }) => (
+   142→    <div onClick={onClick} style={{
+   143→      background: dark ? T.dark : T.card,
+   144→      borderRadius: T.radius, padding: 18,
+   145→      boxShadow: dark ? T.shadowLg : T.shadow,
+   146→      ...(onClick ? { cursor: "pointer" } : {}),
+   147→      ...style,
+   148→    }}>{children}</div>
+   149→  );
+   150→
+   151→  const CheckItem = ({ checked, label, sub, onToggle }) => (
+   152→    <button onClick={onToggle} style={{
+   153→      display: "flex", alignItems: "center", gap: 14, padding: "13px 0",
+   154→      background: "none", border: "none", width: "100%", textAlign: "left",
+   155→      cursor: "pointer", borderBottom: `1px solid ${T.border}`,
+   156→    }}>
+   157→      <div style={{
+   158→        width: 22, height: 22, borderRadius: 22, flexShrink: 0,
+   159→        border: `2px solid ${checked ? T.green : T.muted}`,
+   160→        background: checked ? T.green : "transparent",
+   161→        display: "flex", alignItems: "center", justifyContent: "center",
+   162→        transition: "all .25s cubic-bezier(.4,0,.2,1)",
+   163→      }}>
+   164→        {checked && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+   165→      </div>
+   166→      <div style={{ flex: 1 }}>
+   167→        <div style={{
+   168→          fontSize: 15, fontWeight: 500, letterSpacing: -0.3,
+   169→          color: checked ? T.sub : T.text,
+   170→          textDecoration: checked ? "line-through" : "none",
+   171→          transition: "all .25s",
+   172→        }}>{label}</div>
+   173→        {sub && <div style={{ fontSize: 12, color: T.sub, marginTop: 2 }}>{sub}</div>}
+   174→      </div>
+   175→      {checked && <span style={{ fontSize: 11, color: T.green, fontWeight: 600 }}>Done</span>}
+   176→    </button>
+   177→  );
+   178→
+   179→  const SectionHead = ({ icon, label, done, total, sKey }) => (
+   180→    <button onClick={() => toggleSec(sKey)} style={{
+   181→      display: "flex", alignItems: "center", justifyContent: "space-between",
+   182→      width: "100%", padding: "16px 0 6px", background: "none", border: "none", cursor: "pointer",
+   183→    }}>
+   184→      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+   185→        <span style={{ fontSize: 10, color: T.sub }}>{icon}</span>
+   186→        <span style={{ fontSize: 12, fontWeight: 700, color: T.sub, textTransform: "uppercase", letterSpacing: 1.5 }}>{label}</span>
+   187→      </div>
+   188→      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+   189→        {done === total && total > 0 && <span style={{ fontSize: 9, padding: "2px 7px", background: T.accent, color: T.accentDark, borderRadius: 6, fontWeight: 700 }}>DONE</span>}
+   190→        <span style={{ fontSize: 12, fontWeight: 600, color: done === total && total > 0 ? T.green : T.muted }}>{done}/{total}</span>
+   191→        <svg width="12" height="12" viewBox="0 0 12 12" style={{ transform: openSec[sKey] ? "rotate(0)" : "rotate(-90deg)", transition: "transform .2s" }}><path d="M3 4.5L6 7.5L9 4.5" stroke={T.muted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+   192→      </div>
+   193→    </button>
+   194→  );
+   195→
+   196→  const ProgressRing = ({ size, stroke, pct: p, children }) => {
+   197→    const r = (size - stroke) / 2;
+   198→    const c = 2 * Math.PI * r;
+   199→    return (
+   200→      <div style={{ position: "relative", width: size, height: size }}>
+   201→        <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+   202→          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={T.border} strokeWidth={stroke} />
+   203→          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={p >= 100 ? T.green : T.dark}
+   204→            strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c - (p/100)*c}
+   205→            strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)" }} />
+   206→        </svg>
+   207→        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>{children}</div>
+   208→      </div>
+   209→    );
+   210→  };
+   211→
+   212→  // ============ TODAY ============
+   213→
+   214→  const TodayView = () => {
+   215→    const secCounts = SECTIONS.map(s => {
+   216→      const items = tasks[s.key];
+   217→      return { ...s, done: items.filter(t => checks[t.id]).length, total: items.length };
+   218→    });
+   219→
+   220→    return (
+   221→      <div style={{ animation: "slideUp .5s cubic-bezier(.4,0,.2,1)" }}>
+   222→        {/* Greeting */}
+   223→        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+   224→          <div>
+   225→            <div style={{ fontSize: 15, color: T.sub, fontWeight: 400 }}>{greet}</div>
+   226→            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: T.text, marginTop: 2 }}>dongbao</div>
+   227→          </div>
+   228→          <ProgressRing size={54} stroke={3.5} pct={pct}>
+   229→            <span style={{ fontSize: 16, fontWeight: 800, color: T.text }}>{doneCount}</span>
+   230→          </ProgressRing>
+   231→        </div>
+   232→
+   233→        {/* Hero training card */}
+   234→        <Card dark style={{ marginBottom: 16, position: "relative", overflow: "hidden" }}>
+   235→          <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: T.accent, opacity: 0.08 }} />
+   236→          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+   237→            <div>
+   238→              <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Hôm nay · {DAYS[dow]}</div>
+   239→              <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: -0.5 }}>{training.label}</div>
+   240→              <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>{training.desc}</div>
+   241→            </div>
+   242→            <div style={{
+   243→              padding: "6px 14px", borderRadius: 10,
+   244→              background: training.type === "strength" ? T.accent : training.type === "cardio" ? "#fff" : "#444",
+   245→              color: training.type === "strength" ? T.accentDark : training.type === "cardio" ? T.dark : "#fff",
+   246→              fontSize: 12, fontWeight: 700,
+   247→            }}>{training.time}</div>
+   248→          </div>
+   249→        </Card>
+   250→
+   251→        {/* Feeling bar */}
+   252→        <Card style={{ marginBottom: 16, padding: 14 }}>
+   253→          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+   254→            <span style={{ fontSize: 12, fontWeight: 600, color: T.sub, letterSpacing: 0.5 }}>Năng lượng</span>
+   255→            {feeling > 0 && <span style={{ fontSize: 24, fontWeight: 800, color: feeling >= 7 ? T.green : feeling >= 4 ? T.text : T.red }}>{feeling}</span>}
+   256→          </div>
+   257→          <div style={{ display: "flex", gap: 4 }}>
+   258→            {[1,2,3,4,5,6,7,8,9,10].map(n => (
+   259→              <button key={n} onClick={() => setFeeling(n)} style={{
+   260→                flex: 1, height: 28, borderRadius: 8, border: "none", cursor: "pointer",
+   261→                background: n <= feeling ? (feeling >= 7 ? T.green : feeling >= 4 ? T.dark : T.red) : T.border,
+   262→                transition: "all .15s cubic-bezier(.4,0,.2,1)",
+   263→              }} />
+   264→            ))}
+   265→          </div>
+   266→        </Card>
+   267→
+   268→        {/* Task sections */}
+   269→        <Card style={{ marginBottom: 16 }}>
+   270→          {SECTIONS.map(sec => {
+   271→            const items = tasks[sec.key];
+   272→            const secDone = items.filter(t => checks[t.id]).length;
+   273→            return (
+   274→              <div key={sec.key}>
+   275→                <SectionHead icon={sec.icon} label={sec.label} done={secDone} total={items.length} sKey={sec.key} />
+   276→                {openSec[sec.key] && (
+   277→                  <div style={{ animation: "fadeIn .3s ease" }}>
+   278→                    {items.map(t => (
+   279→                      <CheckItem key={t.id} checked={checks[t.id]} label={t.label} sub={t.sub} onToggle={() => toggle(t.id)} />
+   280→                    ))}
+   281→                    {sec.key === "mind" && (
+   282→                      <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
+   283→                        placeholder="Ghi chú hôm nay..."
+   284→                        style={{
+   285→                          width: "100%", minHeight: 48, padding: "10px 0", background: "none",
+   286→                          border: "none", borderBottom: `1px solid ${T.border}`, color: T.text,
+   287→                          fontSize: 14, resize: "none", fontFamily: "inherit",
+   288→                        }} />
+   289→                    )}
+   290→                  </div>
+   291→                )}
+   292→              </div>
+   293→            );
+   294→          })}
+   295→        </Card>
+   296→
+   297→        {/* Bottom bar */}
+   298→        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+   299→          <div style={{
+   300→            flex: 1, background: pct === 100 ? T.accent : T.border,
+   301→            borderRadius: T.radiusSm, padding: "14px 16px",
+   302→            display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+   303→          }}>
+   304→            <span style={{ fontSize: 13, fontWeight: 700, color: pct === 100 ? T.accentDark : T.sub }}>{pct}%</span>
+   305→            <span style={{ fontSize: 11, color: pct === 100 ? T.accentDark : T.sub }}>hoàn thành</span>
+   306→          </div>
+   307→          <button onClick={() => { setChecks({}); setFeeling(0); setNoteText(""); }} style={{
+   308→            padding: "14px 18px", background: T.card, border: `1px solid ${T.border}`,
+   309→            borderRadius: T.radiusSm, cursor: "pointer", fontSize: 12, color: T.sub, fontWeight: 600,
+   310→            fontFamily: "inherit",
+   311→          }}>Ngày mới</button>
+   312→        </div>
+   313→      </div>
+   314→    );
+   315→  };
+   316→
+   317→  // ============ WEEK ============
+   318→
+   319→  const WeekView = () => {
+   320→    const wDone = WEEK.filter(w => weekDone[w.day]).length;
+   321→    return (
+   322→      <div style={{ animation: "slideUp .5s cubic-bezier(.4,0,.2,1)" }}>
+   323→        <div style={{ marginBottom: 20 }}>
+   324→          <div style={{ fontSize: 15, color: T.sub }}>Lịch trình</div>
+   325→          <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: T.text }}>Tuần này</div>
+   326→        </div>
+   327→
+   328→        {/* Week pill bar */}
+   329→        <Card dark style={{ marginBottom: 16, padding: 12, display: "flex", gap: 4 }}>
+   330→          {WEEK.map(w => {
+   331→            const isToday = w.day === DAYS[dow];
+   332→            const done = weekDone[w.day];
+   333→            return (
+   334→              <button key={w.day} onClick={() => setWeekDone(p => ({ ...p, [w.day]: !p[w.day] }))} style={{
+   335→                flex: 1, padding: "10px 0", borderRadius: 12, border: "none", cursor: "pointer",
+   336→                background: done ? T.accent : (isToday ? "#333" : "transparent"),
+   337→                display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+   338→                transition: "all .2s cubic-bezier(.4,0,.2,1)",
+   339→              }}>
+   340→                <span style={{ fontSize: 9, fontWeight: 600, color: done ? T.accentDark : (isToday ? "#fff" : "#666"), letterSpacing: 0.5 }}>{w.day}</span>
+   341→                <span style={{ fontSize: 11, fontWeight: 700, color: done ? T.accentDark : (isToday ? T.accent : "#555") }}>{w.type === "s" ? "◆" : w.type === "c" ? "○" : w.type === "f" ? "◇" : "—"}</span>
+   342→              </button>
+   343→            );
+   344→          })}
+   345→        </Card>
+   346→
+   347→        {/* Progress */}
+   348→        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+   349→          <Card style={{ flex: 1, textAlign: "center", padding: 16 }}>
+   350→            <div style={{ fontSize: 32, fontWeight: 800, color: T.text }}>{wDone}</div>
+   351→            <div style={{ fontSize: 11, color: T.sub, marginTop: 2 }}>ngày xong</div>
+   352→          </Card>
+   353→          <Card style={{ flex: 1, textAlign: "center", padding: 16 }}>
+   354→            <div style={{ fontSize: 32, fontWeight: 800, color: 7 - wDone > 0 ? T.text : T.green }}>{7 - wDone}</div>
+   355→            <div style={{ fontSize: 11, color: T.sub, marginTop: 2 }}>còn lại</div>
+   356→          </Card>
+   357→        </div>
+   358→
+   359→        {/* Daily detail list */}
+   360→        <Card style={{ marginBottom: 16 }}>
+   361→          {WEEK.map((w, i) => {
+   362→            const detail = TRAINING[DAYS.indexOf(w.day)];
+   363→            const isToday = w.day === DAYS[dow];
+   364→            const isOpen = expandDay === i;
+   365→            return (
+   366→              <div key={w.day}>
+   367→                <button onClick={() => setExpandDay(isOpen ? null : i)} style={{
+   368→                  display: "flex", alignItems: "center", gap: 14, padding: "14px 0",
+   369→                  width: "100%", background: "none", border: "none", cursor: "pointer",
+   370→                  borderBottom: `1px solid ${T.border}`,
+   371→                }}>
+   372→                  <div style={{
+   373→                    width: 36, height: 36, borderRadius: 36, flexShrink: 0,
+   374→                    background: weekDone[w.day] ? T.green : (isToday ? T.dark : T.border),
+   375→                    display: "flex", alignItems: "center", justifyContent: "center",
+   376→                    transition: "all .2s",
+   377→                  }}>
+   378→                    {weekDone[w.day]
+   379→                      ? <svg width="14" height="12" viewBox="0 0 14 12" fill="none"><path d="M1 6L5 10L13 1" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+   380→                      : <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? "#fff" : T.sub }}>{w.day}</span>
+   381→                    }
+   382→                  </div>
+   383→                  <div style={{ flex: 1, textAlign: "left" }}>
+   384→                    <div style={{ fontSize: 15, fontWeight: 600, color: isToday ? T.text : T.sub, letterSpacing: -0.3 }}>{detail.label}</div>
+   385→                    <div style={{ fontSize: 12, color: T.muted }}>{detail.desc}</div>
+   386→                  </div>
+   387→                  {isToday && <div style={{ width: 8, height: 8, borderRadius: 4, background: T.accent }} />}
+   388→                </button>
+   389→                {isOpen && (
+   390→                  <div style={{ padding: "10px 0 10px 50px", animation: "fadeIn .2s ease" }}>
+   391→                    <div style={{ fontSize: 12, color: T.sub, lineHeight: 1.6 }}>
+   392→                      ⏱ {detail.time}<br/>
+   393→                      💡 Bận? {detail.type === "strength" ? "20p bodyweight ở nhà" : detail.type === "cardio" ? "15p sau ăn trưa + tối" : "Nghỉ cũng tốt"}
+   394→                    </div>
+   395→                  </div>
+   396→                )}
+   397→              </div>
+   398→            );
+   399→          })}
+   400→        </Card>
+   401→
+   402→        {/* MVW */}
+   403→        <Card style={{ background: T.bg, border: `1px solid ${T.border}`, boxShadow: "none", marginBottom: 8 }}>
+   404→          <div style={{ fontSize: 11, fontWeight: 700, color: T.sub, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>Minimum Viable Week</div>
+   405→          <div style={{ fontSize: 13, color: T.sub, lineHeight: 1.8 }}>
+   406→            <b style={{ color: T.text }}>Bận?</b> Bodyweight 20p × 2 + Walk sau ăn<br/>
+   407→            <b style={{ color: T.text }}>Ốm?</b> Đi bộ nhẹ. Không tập nặng.<br/>
+   408→            <b style={{ color: T.text }}>Công tác?</b> Push-up + Squat phòng KS
+   409→          </div>
+   410→        </Card>
+   411→
+   412→        <button onClick={() => { setWeekDone({}); setExpandDay(null); }} style={{
+   413→          width: "100%", padding: 14, background: T.card, border: `1px solid ${T.border}`,
+   414→          borderRadius: T.radiusSm, cursor: "pointer", fontSize: 12, color: T.sub,
+   415→          fontWeight: 600, fontFamily: "inherit", marginBottom: 8,
+   416→        }}>Tuần mới</button>
+   417→      </div>
+   418→    );
+   419→  };
+   420→
+   421→  // ============ STATS ============
+   422→
+   423→  const StatsView = () => {
+   424→    const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+   425→    const fd = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+   426→    const cal = [];
+   427→    for (let i = 0; i < fd; i++) cal.push(null);
+   428→    for (let i = 1; i <= dim; i++) cal.push(i);
+   429→
+   430→    const secStats = SECTIONS.map(s => {
+   431→      const items = tasks[s.key];
+   432→      return { ...s, done: items.filter(t => checks[t.id]).length, total: items.length };
+   433→    });
+   434→
+   435→    return (
+   436→      <div style={{ animation: "slideUp .5s cubic-bezier(.4,0,.2,1)" }}>
+   437→        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+   438→          <div>
+   439→            <div style={{ fontSize: 15, color: T.sub }}>Thống kê</div>
+   440→            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: T.text }}>{MONTHS[now.getMonth()]}</div>
+   441→          </div>
+   442→          <div style={{ fontSize: 13, color: T.muted }}>{now.getFullYear()}</div>
+   443→        </div>
+   444→
+   445→        {/* Calendar */}
+   446→        <Card style={{ marginBottom: 16, padding: 14 }}>
+   447→          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
+   448→            {DAYS.map(d => (
+   449→              <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 600, color: T.muted, padding: 4 }}>{d}</div>
+   450→            ))}
+   451→            {cal.map((d, i) => (
+   452→              <div key={i} style={{
+   453→                textAlign: "center", padding: "7px 0", borderRadius: 10,
+   454→                fontSize: 13, fontWeight: d === now.getDate() ? 700 : 400,
+   455→                color: d === now.getDate() ? "#fff" : (d ? T.text : "transparent"),
+   456→                background: d === now.getDate() ? T.dark : "transparent",
+   457→              }}>{d || "·"}</div>
+   458→            ))}
+   459→          </div>
+   460→        </Card>
+   461→
+   462→        {/* Ring */}
+   463→        <Card dark style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 20, padding: 20 }}>
+   464→          <ProgressRing size={90} stroke={5} pct={pct}>
+   465→            <span style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>{pct}</span>
+   466→            <span style={{ fontSize: 9, color: "#666" }}>%</span>
+   467→          </ProgressRing>
+   468→          <div>
+   469→            <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>Hôm nay</div>
+   470→            {secStats.map(s => (
+   471→              <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+   472→                <div style={{ width: 16, height: 3, borderRadius: 2, background: s.done === s.total && s.total > 0 ? T.accent : "#333" }} />
+   473→                <span style={{ fontSize: 11, color: s.done === s.total && s.total > 0 ? T.accent : "#666" }}>{s.label} {s.done}/{s.total}</span>
+   474→              </div>
+   475→            ))}
+   476→          </div>
+   477→        </Card>
+   478→
+   479→        {/* Feeling display */}
+   480→        {feeling > 0 && (
+   481→          <Card style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+   482→            <span style={{ fontSize: 13, color: T.sub }}>Năng lượng hôm nay</span>
+   483→            <span style={{ fontSize: 32, fontWeight: 800, color: feeling >= 7 ? T.green : feeling >= 4 ? T.text : T.red }}>{feeling}<span style={{ fontSize: 14, color: T.muted }}>/10</span></span>
+   484→          </Card>
+   485→        )}
+   486→
+   487→        {/* Category cards */}
+   488→        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+   489→          {secStats.map(s => {
+   490→            const sp = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+   491→            return (
+   492→              <Card key={s.key} style={{ padding: 14 }}>
+   493→                <div style={{ fontSize: 11, color: T.sub, fontWeight: 600, marginBottom: 10 }}>{s.icon} {s.label}</div>
+   494→                <div style={{ fontSize: 24, fontWeight: 800, color: sp === 100 ? T.green : T.text }}>{sp}%</div>
+   495→                <div style={{ height: 3, background: T.border, borderRadius: 2, marginTop: 8 }}>
+   496→                  <div style={{ height: 3, background: sp === 100 ? T.green : T.dark, borderRadius: 2, width: `${sp}%`, transition: "width .5s" }} />
+   497→                </div>
+   498→              </Card>
+   499→            );
+   500→          })}
+   501→        </div>
+   502→      </div>
+   503→    );
+   504→  };
+   505→
+   506→  // ============ SYSTEM ============
+   507→
+   508→  const SystemView = () => (
+   509→    <div style={{ animation: "slideUp .5s cubic-bezier(.4,0,.2,1)" }}>
+   510→      <div style={{ marginBottom: 20 }}>
+   511→        <div style={{ fontSize: 15, color: T.sub }}>Hệ thống</div>
+   512→        <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: T.text }}>Layer {layer}</div>
+   513→      </div>
+   514→
+   515→      {/* Layer selector */}
+   516→      <Card dark style={{ marginBottom: 16, padding: 12 }}>
+   517→        <div style={{ display: "flex", gap: 6 }}>
+   518→          {LAYERS.map(l => (
+   519→            <button key={l.id} onClick={() => setLayer(l.id)} style={{
+   520→              flex: 1, padding: "12px 8px", borderRadius: 12, border: "none", cursor: "pointer",
+   521→              background: layer === l.id ? T.accent : "#333",
+   522→              transition: "all .2s",
+   523→            }}>
+   524→              <div style={{ fontSize: 12, fontWeight: 700, color: layer === l.id ? T.accentDark : "#888" }}>Layer {l.id}</div>
+   525→              <div style={{ fontSize: 10, color: layer === l.id ? T.accentDark : "#666", marginTop: 2 }}>{l.name}</div>
+   526→            </button>
+   527→          ))}
+   528→        </div>
+   529→      </Card>
+   530→
+   531→      {/* Active layer detail */}
+   532→      {LAYERS.filter(l => l.id === layer).map(l => (
+   533→        <Card key={l.id} style={{ marginBottom: 16 }}>
+   534→          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+   535→            <div>
+   536→              <div style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{l.name}</div>
+   537→              <div style={{ fontSize: 12, color: T.sub }}>{l.period}</div>
+   538→            </div>
+   539→            <span style={{ fontSize: 9, padding: "3px 10px", background: T.accent, color: T.accentDark, borderRadius: 8, fontWeight: 700 }}>ACTIVE</span>
+   540→          </div>
+   541→          {l.focus.map((f, i) => (
+   542→            <div key={i} style={{
+   543→              display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+   544→              borderBottom: i < l.focus.length - 1 ? `1px solid ${T.border}` : "none",
+   545→            }}>
+   546→              <div style={{ width: 6, height: 6, borderRadius: 3, background: T.dark }} />
+   547→              <span style={{ fontSize: 14, color: T.text, fontWeight: 500 }}>{f}</span>
+   548→            </div>
+   549→          ))}
+   550→        </Card>
+   551→      ))}
+   552→
+   553→      {/* Biomarkers */}
+   554→      <div style={{ marginBottom: 16 }}>
+   555→        <div style={{ fontSize: 12, fontWeight: 700, color: T.sub, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10, padding: "0 2px" }}>7 Chỉ số cốt lõi</div>
+   556→        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+   557→          {BIOMARKERS.map(b => (
+   558→            <Card key={b.name} style={{ padding: 14 }}>
+   559→              <div style={{ fontSize: 11, color: T.sub, fontWeight: 600, marginBottom: 6 }}>{b.name}</div>
+   560→              <div style={{ fontSize: 20, fontWeight: 800, color: T.text, letterSpacing: -0.5 }}>{b.target}</div>
+   561→              <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>{b.unit}{b.unit ? " · " : ""}{b.desc}</div>
+   562→            </Card>
+   563→          ))}
+   564→        </div>
+   565→      </div>
+   566→
+   567→      {/* 10 Foods */}
+   568→      <div style={{ marginBottom: 16 }}>
+   569→        <div style={{ fontSize: 12, fontWeight: 700, color: T.sub, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10, padding: "0 2px" }}>10 Thực phẩm</div>
+   570→        <Card style={{ padding: 14 }}>
+   571→          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+   572→            {FOODS.map(f => (
+   573→              <div key={f.n} style={{
+   574→                display: "flex", alignItems: "center", gap: 5,
+   575→                padding: "6px 10px", background: T.bg, borderRadius: 10,
+   576→              }}>
+   577→                <span style={{ fontSize: 14 }}>{f.e}</span>
+   578→                <div>
+   579→                  <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{f.n}</span>
+   580→                  <span style={{ fontSize: 10, color: T.muted, marginLeft: 4 }}>{f.p}</span>
+   581→                </div>
+   582→              </div>
+   583→            ))}
+   584→          </div>
+   585→        </Card>
+   586→      </div>
+   587→
+   588→      {/* Supplements */}
+   589→      <Card style={{ background: T.bg, border: `1px solid ${T.border}`, boxShadow: "none", marginBottom: 16 }}>
+   590→        <div style={{ fontSize: 11, fontWeight: 700, color: T.sub, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>Bổ sung cơ bản</div>
+   591→        <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
+   592→          ☀️ <b>D3 + K2</b> — sáng, với chất béo<br/>
+   593→          🐟 <b>Omega-3</b> — cùng bữa ăn<br/>
+   594→          🌙 <b>Magnesium</b> — trước ngủ
+   595→        </div>
+   596→        <div style={{ marginTop: 10, fontSize: 11, color: T.sub, fontStyle: "italic" }}>
+   597→          Phần còn lại → xét nghiệm trước, bổ sung sau.
+   598→        </div>
+   599→      </Card>
+   600→
+   601→      {/* Quote */}
+   602→      <div style={{ textAlign: "center", padding: "12px 0 8px" }}>
+   603→        <div style={{ fontSize: 13, color: T.muted, fontStyle: "italic", lineHeight: 1.6 }}>
+   604→          "Bền bỉ thắng hoàn hảo."
+   605→        </div>
+   606→      </div>
+   607→    </div>
+   608→  );
+   609→
+   610→  // ============ TABS & RENDER ============
+   611→
+   612→  const views = { today: TodayView, week: WeekView, stats: StatsView, system: SystemView };
+   613→  const tabList = [
+   614→    { id: "today", label: "Hôm nay", icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/></svg> },
+   615→    { id: "week", label: "Tuần", icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 8H17" stroke="currentColor" strokeWidth="1.5"/><path d="M7 2V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M13 2V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
+   616→    { id: "stats", label: "Thống kê", icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 16V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M8 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M12 16V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M16 16V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> },
+   617→    { id: "system", label: "Hệ thống", icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M10 2V4M10 16V18M2 10H4M16 10H18M4.93 4.93L6.34 6.34M13.66 13.66L15.07 15.07M15.07 4.93L13.66 6.34M6.34 13.66L4.93 15.07" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
+   618→  ];
+   619→  const View = views[tab];
+   620→
+   621→  return (
+   622→    <div style={{
+   623→      minHeight: "100vh", background: T.bg,
+   624→      fontFamily: "'SF Pro Display', -apple-system, 'Helvetica Neue', sans-serif",
+   625→      maxWidth: 430, margin: "0 auto", WebkitFontSmoothing: "antialiased",
+   626→    }}>
+   627→      <style>{`
+   628→        @keyframes slideUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+   629→        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+   630→        * { box-sizing: border-box; margin: 0; padding: 0; }
+   631→        button { font-family: inherit; }
+   632→        input, textarea { outline: none; font-family: inherit; }
+   633→        ::placeholder { color: ${T.muted}; }
+   634→        ::-webkit-scrollbar { width: 0; }
+   635→      `}</style>
+   636→
+   637→      {/* Top bar */}
+   638→      <div style={{
+   639→        padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center",
+   640→        position: "sticky", top: 0, zIndex: 10, background: `${T.bg}ee`,
+   641→        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+   642→      }}>
+   643→        <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.5, color: T.text }}>
+   644→          dongbao<span style={{ fontWeight: 400, color: T.muted }}>OS</span>
+   645→        </div>
+   646→        <div style={{
+   647→          display: "flex", alignItems: "center", gap: 4,
+   648→          padding: "4px 10px", background: T.card, borderRadius: 10,
+   649→          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+   650→        }}>
+   651→          <span style={{ fontSize: 10, fontWeight: 700, color: T.sub }}>L{layer}</span>
+   652→          <div style={{ width: 1, height: 12, background: T.border }} />
+   653→          <span style={{ fontSize: 10, fontWeight: 700, color: pct === 100 ? T.green : T.text }}>{pct}%</span>
+   654→        </div>
+   655→      </div>
+   656→
+   657→      {/* Content */}
+   658→      <div style={{ padding: "8px 16px 90px" }}>
+   659→        <View />
+   660→      </div>
+   661→
+   662→      {/* Bottom nav */}
+   663→      <div style={{
+   664→        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+   665→        width: "100%", maxWidth: 430,
+   666→        background: `${T.bg}dd`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+   667→        borderTop: `1px solid ${T.border}`,
+   668→        padding: "6px 8px 10px", display: "flex", justifyContent: "space-around", zIndex: 10,
+   669→      }}>
+   670→        {tabList.map(t => (
+   671→          <button key={t.id} onClick={() => setTab(t.id)} style={{
+   672→            background: "none", border: "none", cursor: "pointer", padding: "4px 12px",
+   673→            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+   674→            color: tab === t.id ? T.text : T.muted, transition: "color .2s",
+   675→          }}>
+   676→            <div style={{ opacity: tab === t.id ? 1 : 0.4, transition: "opacity .2s" }}>{t.icon}</div>
+   677→            <span style={{ fontSize: 9, fontWeight: tab === t.id ? 700 : 500, letterSpacing: 0.3 }}>{t.label}</span>
+   678→          </button>
+   679→        ))}
+   680→      </div>
+   681→    </div>
+   682→  );
+   683→}
+   684→
