@@ -55,3 +55,35 @@ model AgentConversation {
 
   @@index([date])
 }
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String               // Display name
+  slug        String   @unique      // URL-safe identifier
+  color       String   @default("#1A1A1A") // Accent color
+  description String   @default("")
+  archived    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  timeEntries TimeEntry[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimeEntry {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  date      String               // YYYY-MM-DD (the day this entry belongs to)
+  startAt   DateTime            // When the timer started
+  endAt     DateTime?           // When the timer stopped (null = still running)
+  durationSec Int   @default(0) // Total seconds (0 if still running)
+  note      String   @default("")
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId, date])
+  @@index([date])
+}
