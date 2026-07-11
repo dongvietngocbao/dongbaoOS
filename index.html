@@ -330,10 +330,10 @@ function renderWeek(){
     const allocCard=el("div",{class:"card",style:"margin-bottom:16px"});
     allocCard.appendChild(el("div",{style:"font-size:12px;font-weight:700;color:"+T.sub+";text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px"},"Phân bổ thời gian"));
     const bar=el("div",{style:"display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:12px"});
-    wpt.forEach(p=>{bar.appendChild(el("div",{style:"width:"+((p.totalSec/weeklyTotalSec)*100)+"%;background:"+p.projectColor})));});
+    wpt.forEach(p=>{bar.appendChild(el("div",{style:"width:"+((p.totalSec/weeklyTotalSec)*100)+"%;background:"+p.projectColor}));});
     allocCard.appendChild(bar);
     wpt.forEach(p=>{allocCard.appendChild(el("div",{style:"display:flex;align-items:center;gap:8px;margin-bottom:6px"},
-      el("div",{style:"width:12px;height:12px;border-radius:4pxbackground:"+p.projectColor+";flex-shrink:0",style:"width:12px;height:12px;border-radius:4px;background:"+p.projectColor+";flex-shrink:0"}),
+      el("div",{style:"width:12px;height:12px;border-radius:4px;background:"+p.projectColor+";flex-shrink:0"}),
       el("span",{style:"font-size:13px;font-weight:600;color:"+T.text+";flex:1"},p.projectName),
       el("span",{style:"font-size:13px;font-weight:700;color:"+T.sub},fmtDuration(p.totalSec)),
       el("span",{style:"font-size:11px;color:"+T.muted+";min-width:36px;text-align:right"},Math.round((p.totalSec/weeklyTotalSec)*100)+"%")));});
