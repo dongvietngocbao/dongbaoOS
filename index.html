@@ -46,23 +46,36 @@ const T={bg:"#F4F3F0",card:"#FFFFFF",dark:"#1A1A1A",text:"#1A1A1A",sub:"#8E8E93"
 const DAYS=["CN","T2","T3","T4","T5","T6","T7"];
 const MONTHS=["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6","Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
 const TRAINING={1:{label:"Strength A",desc:"Squat · Push-up · Row",type:"strength",time:"45–60p"},2:{label:"Đi bộ Zone 2",desc:"Nh nhẹ nhàng · nói chuyện được",type:"cardio",time:"30–45p"},3:{label:"Strength B",desc:"Hinge · Pull-up · Lunge",type:"strength",time:"45–60p"},4:{label:"Đi bộ + Mobility",desc:"Đi bộ 30p · Giãn cơ 10p",type:"cardio",time:"30–45p"},5:{label:"Strength C",desc:"Full body hoặc nghỉ",type:"strength",time:"45–60p"},6:{label:"Tự do",desc:"Bơi · Leo núi · Thể thao",type:"free",time:"Tự do"},0:{label:"Phục hồi",desc:"Nghỉ ngơi · Meal prep",type:"rest",time:"—"}};
-const SECTIONS=[{key:"training",label:"Luyện Tập",icon:"●"},{key:"nutrition",label:"Dinh Dưỡng",icon:"◐"},{key:"mind",label:"Tư Duy",icon:"◆"},{key:"sleep",label:"Giấc Ngủ",icon:"◑"}];
+const SECTIONS=[{key:"training",label:"Cardio + Strength",icon:"●"},{key:"nutrition",label:"Nutrition + Fasting",icon:"◐"},{key:"mind",label:"Nexos Deep Work",icon:"◆"},{key:"sleep",label:"Sleep + Recovery",icon:"◑"}];
 const BIOMARKERS=[{name:"ApoB",target:"< 60",unit:"mg/dL",desc:"Xơ vữa động mạch"},{name:"Fasting Insulin",target:"2–5",unit:"µIU/mL",desc:"Kháng insulin"},{name:"HbA1c",target:"4.8–5.3",unit:"%",desc:"Đường huyết TB"},{name:"hs-CRP",target:"< 0.5",unit:"mg/L",desc:"Viêm âm ỉ"},{name:"VO2 Max",target:"Top 25%",unit:"",desc:"Sức bền tim phổi"},{name:"Grip",target:"> 50",unit:"kg",desc:"Sức mạnh tổng thể"}];
 const LAYERS=[{id:1,name:"Nền Móng",period:"6 tháng đầu",focus:["Tập 3-4x/tuần","Ngủ 7-8h","Protein + Rau","Đi bộ mỗi ngày"]},{id:2,name:"Mở Rộng",period:"Tháng 7–18",focus:["VO2 Max 4×4","Sauna 2-3x","XN Biomarker","Bổ sung theo data"]},{id:3,name:"Tối Ưu",period:"Sau 18 tháng",focus:["Cold Plunge","NSDR","Dual-tasking","Geroprotectors"]}];
 const FOODS=[{n:"Trứng",p:"Protein+Choline",e:"🥚"},{n:"Cá Nục",p:"Omega-3",e:"🐟"},{n:"Đậu Phụ",p:"Protein TV",e:"🫘"},{n:"Rau Ngót",p:"Vi chất VN",e:"🥬"},{n:"Khoai Lang",p:"Carb chậm",e:"🍠"},{n:"Nghệ Đỏ",p:"Kháng viêm",e:"🟡"},{n:"Ổi",p:"VitC ×4 cam",e:"🍈"},{n:"Cua Đồng",p:"Canxi ×40",e:"🦀"},{n:"Tỏi+Gừng",p:"Miễn dịch",e:"🧄"},{n:"Sữa chua",p:"Probiotics",e:"🥛"}];
 const PROJECTS=[{id:"p1",name:"Nexos",color:"#2196F3",desc:"Trust infrastructure"},{id:"p2",name:"OpenArch",color:"#4ECDC4",desc:"Dev-Team-as-a-Service"},{id:"p3",name:"Blublok",color:"#FFD700",desc:"FICO cho công nhân"},{id:"p4",name:"Yaloka",color:"#FF6B35",desc:"Location intelligence"},{id:"p5",name:"Saitrai",color:"#AB47BC",desc:"F&B → data moat"},{id:"p6",name:"DongbaoOS",color:"#34C759",desc:"30-year health OS"},{id:"p7",name:"Cá nhân",color:"#8E8E93",desc:"Đọc, học, family"}];
 
-function buildTasks(dow){return{training:[{id:"t_main",label:TRAINING[dow].label,sub:TRAINING[dow].desc},...(dow>=1&&dow<=5&&dow%2===1?[{id:"t_collagen",label:"Collagen + VitC",sub:"60 phút trước tập"}]:[]),{id:"t_walk",label:"Đi bộ 8.000+ bước",sub:"Trong ngày"}],nutrition:[{id:"n_protein",label:"Đủ protein mỗi bữa",sub:"~35-40g × 3 bữa"},{id:"n_veg",label:"Rau ≥ 3 phần",sub:"Ăn rau trước, cơm sau"},{id:"n_water",label:"Uống 2–3 lít nước",sub:""},{id:"n_stop",label:"Ngừng ăn 3h trước ngủ",sub:""}],mind:[{id:"m_read",label:"Đọc 10 trang sách",sub:""},{id:"m_note",label:"Viết 1 ghi chú",sub:"Suy nghĩ · Bài học · Ý tưởng"},{id:"m_breath",label:"Thở 4-7-8",sub:"Hít 4s · Giữ 7s · Thở 8s × 3"}],sleep:[{id:"s_time",label:"Ngủ đúng giờ",sub:"Cố định, kể cả cuối tuần"},{id:"s_screen",label:"Không màn hình 1h",sub:"Trước khi ngủ"}]}};
+function buildTasks(dow){const isWeekday=dow>=1&&dow<=5;const isSat=dow===6;const isSun=dow===0;return{training:[{id:"t_commute",label:"Bike commute 13km + mask",sub:isWeekday?"Morning + evening ride":"Weekend check"},{id:"t_strength",label:isWeekday?"Mobility 10min at office":isSat?"Strength training (home)":"Long ride or strength",sub:isWeekday?"After bike commute":"Weekend exercise"}],nutrition:[{id:"n_fast",label:"Fasting 12:00–18:00",sub:"Eating window only"},{id:"n_meal1",label:"Meal 1 (~1300 kcal, protein 60-70g)",sub:"12:00 break fast"},{id:"n_meal2",label:"Meal 2 (~1300 kcal, protein 60-70g)",sub:"17:30 at desk"},{id:"n_water",label:"Water + electrolytes (06:00)",sub:"Before ride"},{id:"n_nocaffeine",label:"No caffeine after 14:00",sub:"Sleep protection"}],mind:[{id:"m_nexos1",label:"Nexos #1 (07:45–10:00)",sub:"Peak fasted deep work"},{id:"m_nexos2",label:"Nexos #2 (10:45–12:00)",sub:"Fasted deep work"},{id:"m_nexos3",label:"Nexos #3 (13:00–14:00)",sub:"Before Italy online"},{id:"m_nexos4",label:isWeekday?"Nexos #4 (19:00–20:15)":"Friday OFF",sub:isWeekday?"After Italy handover":"Rest if Friday"},{id:"m_read",label:"Read book 30min (22:00)",sub:"Sleep hygiene"}],sleep:[{id:"s_time",label:"Sleep 22:30, wake 05:45",sub:"7h15 target"},{id:"s_nap",label:"Nap 15min (12:45)",sub:"Non-negotiable"},{id:"s_noscreen",label:"No screen 21:00+",sub:"Wind down + fasting starts"}]}};
 function fmtDuration(sec){const h=Math.floor(sec/3600);const m=Math.floor((sec%3600)/60);if(h>0)return h+"h "+m+"m";return m+"m";}
 function fmtTimer(sec){const h=Math.floor(sec/3600);const m=Math.floor((sec%3600)/60);const s=sec%60;if(h>0)return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");return m+":"+String(s).padStart(2,"0");}
 function todayStr(){return new Date().toISOString().slice(0,10);}
 
 // === STORAGE ===
-const STORE_KEY="dongbao_os_v5";
+const STORE_KEY="dongbao_os_v6";
+const SHEETS_KEY="dongbao_sheets_url";
 function loadStore(){try{return JSON.parse(localStorage.getItem(STORE_KEY))||{}}catch(e){return{}}}
 function saveStore(d){try{localStorage.setItem(STORE_KEY,JSON.stringify(d))}catch(e){}}
 function loadEntries(){try{return JSON.parse(localStorage.getItem("dongbao_entries"))||[]}catch(e){return{}}}
 function saveEntries(d){try{localStorage.setItem("dongbao_entries",JSON.stringify(d))}catch(e){}}
+function getSheetsUrl(){return localStorage.getItem(SHEETS_KEY)||""}
+function setSheetsUrl(u){try{localStorage.setItem(SHEETS_KEY,u)}catch(e){}}
+
+// === GOOGLE SHEETS SYNC ===
+async function syncToSheets(payload){
+  const url=getSheetsUrl();
+  if(!url)return{ok:false,err:"No URL"};
+  try{
+    await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    return{ok:true};
+  }catch(e){return{ok:false,err:e.message};}
+}
 
 // === STATE ===
 let state={tab:"today",checks:{},feeling:0,noteText:"",layer:1,...loadStore()};
@@ -73,8 +86,25 @@ let timerInterval=null;
 let openSec={training:true,nutrition:true,mind:true,sleep:true};
 let expandDay=null;
 
-function persist(){saveStore({checks:state.checks,feeling:state.feeling,noteText:state.noteText,layer:state.layer,tab:state.tab});}
-function persistEntries(){saveEntries(entries);}
+function persist(){
+  saveStore({checks:state.checks,feeling:state.feeling,noteText:state.noteText,layer:state.layer,tab:state.tab});
+  // Sync to Google Sheets
+  const now=new Date();const dow=now.getDay();
+  const tasks=buildTasks(dow);
+  const allIds=[...tasks.training,...tasks.nutrition,...tasks.mind,...tasks.sleep].map(t=>t.id);
+  const doneCount=allIds.filter(id=>state.checks[id]).length;
+  const totalCount=allIds.length;
+  const todayPct=totalCount>0?Math.round((doneCount/totalCount)*100):0;
+  syncToSheets({type:"daily_log",date:todayStr(),training:tasks.training.filter(t=>state.checks[t.id]).map(t=>t.label).join("; "),nutrition:tasks.nutrition.filter(t=>state.checks[t.id]).map(t=>t.label).join("; "),mind:tasks.mind.filter(t=>state.checks[t.id]).map(t=>t.label).join("; "),sleep:tasks.sleep.filter(t=>state.checks[t.id]).map(t=>t.label).join("; "),totalPct:todayPct,feeling:state.feeling,note:state.noteText,layer:state.layer,fasting:!!state.checks["n_fast"]});
+}
+function persistEntries(){
+  saveEntries(entries);
+  // Sync completed entries to Google Sheets
+  entries.filter(e=>e.endAt).forEach(e=>{
+    const proj=PROJECTS.find(p=>p.id===e.projectId);
+    syncToSheets({type:"time_entry",date:e.date,project:proj?proj.name:"-",startAt:e.startAt,endAt:e.endAt,durationSec:e.durationSec,durationText:fmtDuration(e.durationSec),note:e.note||""});
+  });
+}
 
 // === HELPERS ===
 function el(tag,props,...children){const e=document.createElement(tag);if(props)for(const[k,v]of Object.entries(props)){if(k==="style")e.style.cssText=v;else if(k==="onClick")e.onclick=v;else if(k==="html")e.innerHTML=v;else e.setAttribute(k,v);}children.forEach(c=>{if(c==null)return;if(typeof c==="string")e.appendChild(document.createTextNode(c));else e.appendChild(c);});return e;}
@@ -498,13 +528,87 @@ function renderStats(){
   return wrap;
 }
 
+// === SETTINGS VIEW ===
+function renderSettings(){
+  const wrap=el("div",{class:"tab-content"});
+  wrap.appendChild(el("div",{style:"margin-bottom:20px"},
+    el("div",{style:"font-size:15px;color:"+T.sub},"Configuration"),
+    el("div",{style:"font-size:28px;font-weight:800;letter-spacing:-1px;color:"+T.text},"Settings")));
+
+  // Google Sheets sync
+  const sheetCard=el("div",{class:"card",style:"margin-bottom:16px"});
+  sheetCard.appendChild(el("div",{style:"font-size:12px;font-weight:700;color:"+T.sub+";text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px"},"Google Sheets Sync"));
+  const url=getSheetsUrl();
+  sheetCard.appendChild(el("div",{style:"font-size:13px;color:"+(url?T.green:T.sub)+";margin-bottom:8px"},url?"Connected":"Not configured"));
+  const inp=el("input",{placeholder:"Paste Google Apps Script Web App URL...",style:"width:100%;padding:12px;border:1px solid "+T.border+";border-radius:"+T.radiusSm+";font-size:13px;margin-bottom:8px"});
+  inp.value=url;
+  sheetCard.appendChild(inp);
+  sheetCard.appendChild(el("button",{onClick:()=>{
+    setSheetsUrl(inp.value.trim());
+    render();
+  },style:"width:100%;padding:12px;background:"+T.dark+";color:#fff;border:none;border-radius:"+T.radiusSm+";font-size:13px;font-weight:700"},"Save URL"));
+  wrap.appendChild(sheetCard);
+
+  // Exit condition
+  const exitCard=el("div",{class:"card-dark",style:"margin-bottom:16px"});
+  exitCard.appendChild(el("div",{style:"font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px"},"Exit Condition"));
+  exitCard.appendChild(el("div",{style:"font-size:22px;font-weight:800;color:#fff"},"10 billion VND"));
+  exitCard.appendChild(el("div",{style:"font-size:13px;color:#888;margin-top:4px"},"When Nexos reaches 10B VND → quit KTS"));
+  wrap.appendChild(exitCard);
+
+  // Schedule v2 summary
+  const schedCard=el("div",{class:"card",style:"margin-bottom:16px"});
+  schedCard.appendChild(el("div",{style:"font-size:12px;font-weight:700;color:"+T.sub+";text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px"},"Schedule v2"));
+  const items=[
+    ["05:45","Wake up"],
+    ["06:30","Bike commute 13km"],
+    ["07:45","Nexos #1 deep work (fasted)"],
+    ["10:00","KTS anchor — assign VN team"],
+    ["10:45","Nexos #2 deep work"],
+    ["12:00","Meal 1 (break fast)"],
+    ["12:45","Nap 15min"],
+    ["13:00","Nexos #3"],
+    ["14:00","KTS coordination (Italy)"],
+    ["17:30","Meal 2"],
+    ["19:00","Nexos #4"],
+    ["20:15","Bike home"],
+    ["22:00","Read book 30min"],
+    ["22:30","Sleep (7h15)"]
+  ];
+  items.forEach(([time,act])=>{
+    schedCard.appendChild(el("div",{style:"display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid "+T.border},
+      el("span",{style:"font-size:12px;font-weight:700;color:"+T.sub+";min-width:50px"},time),
+      el("span",{style:"font-size:13px;color:"+T.text},act)));
+  });
+  wrap.appendChild(schedCard);
+
+  // Data management
+  const dataCard=el("div",{class:"card",style:"margin-bottom:16px"});
+  dataCard.appendChild(el("div",{style:"font-size:12px;font-weight:700;color:"+T.sub+";text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px"},"Data"));
+  dataCard.appendChild(el("div",{style:"font-size:13px;color:"+T.sub+";margin-bottom:8px"},"Entries: "+entries.length+" | Store: v6"));
+  dataCard.appendChild(el("button",{onClick:()=>{
+    if(confirm("Export all data as JSON?")){
+      const data={store:loadStore(),entries:loadEntries()};
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="dongbaoOS-export-"+todayStr()+".json";a.click();
+    }
+  },style:"width:100%;padding:12px;background:"+T.card+";border:1px solid "+T.border+";border-radius:"+T.radiusSm+";font-size:13px;font-weight:600;color:"+T.text+";margin-bottom:8px"},"Export Data (JSON)"));
+  wrap.appendChild(dataCard);
+
+  // Quote
+  wrap.appendChild(el("div",{style:"text-align:center;padding:12px 0 8px"},
+    el("div",{style:"font-size:13px;color:"+T.muted+";font-style:italic;line-height:1.6"},"\"Reach the finish line with strength, not collapsed.\"")));
+  return wrap;
+}
+
 // === MAIN RENDER ===
 function render(){
   const app=document.getElementById("app");
   app.innerHTML="";
   // Top bar
   const now=new Date();const dow=now.getDay();
-  const allTaskIds=["t_main","t_walk","t_collagen","n_protein","n_veg","n_water","n_stop","m_read","m_note","m_breath","s_time","s_screen"].filter(id=>{if(id==="t_collagen")return dow>=1&&dow<=5&&dow%2===1;return true;});
+  const tasks=buildTasks(dow);
+  const allTaskIds=[...tasks.training,...tasks.nutrition,...tasks.mind,...tasks.sleep].map(t=>t.id);
   const doneCount=allTaskIds.filter(id=>state.checks[id]).length;
   const pct=allTaskIds.length>0?Math.round((doneCount/allTaskIds.length)*100):0;
 
@@ -522,15 +626,17 @@ function render(){
   else if(state.tab==="projects")content.appendChild(renderProjects());
   else if(state.tab==="week")content.appendChild(renderWeek());
   else if(state.tab==="stats")content.appendChild(renderStats());
+  else if(state.tab==="settings")content.appendChild(renderSettings());
   app.appendChild(content);
 
-  // Bottom nav
+  // Bottom nav — 5 tabs
   const nav=el("div",{class:"bottomnav"});
   const tabs=[
-    {id:"today",label:"Hôm nay",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><rect x='3' y='3' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/><rect x='11' y='3' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/><rect x='3' y='11' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/><rect x='11' y='11' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/></svg>"},
+    {id:"today",label:"Today",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><rect x='3' y='3' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/><rect x='11' y='3' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/><rect x='3' y='11' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/><rect x='11' y='11' width='6' height='6' rx='1.5' stroke='currentColor' stroke-width='1.5'/></svg>"},
     {id:"projects",label:"Projects",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><circle cx='10' cy='10' r='7' stroke='currentColor' stroke-width='1.5'/><path d='M10 10L13.5 6.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>"},
-    {id:"week",label:"Tuần",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><rect x='3' y='4' width='14' height='12' rx='2' stroke='currentColor' stroke-width='1.5'/><path d='M3 8H17' stroke='currentColor' stroke-width='1.5'/></svg>"},
-    {id:"stats",label:"Thống kê",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><path d='M4 16V10' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M8 16V6' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M12 16V8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M16 16V4' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>"}
+    {id:"week",label:"Week",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><rect x='3' y='4' width='14' height='12' rx='2' stroke='currentColor' stroke-width='1.5'/><path d='M3 8H17' stroke='currentColor' stroke-width='1.5'/></svg>"},
+    {id:"stats",label:"Stats",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><path d='M4 16V10' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M8 16V6' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M12 16V8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M16 16V4' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>"},
+    {id:"settings",label:"Settings",icon:"<svg width='20' height='20' viewBox='0 0 20 20' fill='none'><circle cx='10' cy='10' r='3' stroke='currentColor' stroke-width='1.5'/><path d='M10 1V3M10 17V19M1 10H3M17 10H19M3.5 3.5L5 5M15 15L16.5 16.5M3.5 16.5L5 15M15 5L16.5 3.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round'/></svg>"}
   ];
   tabs.forEach(t=>{
     const btn=el("button",{onClick:()=>{state.tab=t.id;persist();render();},class:state.tab===t.id?"active":""},
